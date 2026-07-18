@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .models import CANFrame
 
+from .exceptions import InvalidCANFrameError
 
 class CANParser:
     """
@@ -37,8 +38,32 @@ class CANParser:
 
     def parse_line(self, line: str) -> CANFrame:
         """
-        Parse a single CAN frame.
-
-        To be implemented next.
+        Parse a single candump log line.
         """
-        raise NotImplementedError
+
+        try:
+            timestamp_part, rest = line.split(") ", 1)
+            timestamp = float(timestamp_part.strip("("))
+
+            interface, frame = rest.split(" ", 1)
+            can_id, data_hex = frame.split("#")
+
+            data = [
+                int(data_hex[i:i + 2], 16)
+                for i in range(0, len(data_hex), 2)
+            ]
+
+            dlc = len(data)
+
+            return CANFrame(
+                timestamp=timestamp,
+                interface=interface,
+                can_id=can_id,
+                dlc=dlc,
+                data=data,
+            )
+
+        except Exception as exc:
+            raise InvalidCANFrameError(
+                f"Invalid CAN frame: {line}"
+            ) from exc
