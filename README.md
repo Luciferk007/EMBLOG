@@ -1,0 +1,3 @@
+# Emblog
+
+Project scaffold.

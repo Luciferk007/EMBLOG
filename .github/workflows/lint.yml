@@ -1,0 +1,11 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Configure linting here"
