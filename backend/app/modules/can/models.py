@@ -16,6 +16,7 @@ class CANFrame:
     can_id: str
     dlc: int
     data: list[int]
+    is_extended: bool
 
 
 @dataclass(slots=True)

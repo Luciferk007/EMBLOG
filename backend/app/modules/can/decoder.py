@@ -26,9 +26,13 @@ class CANDecoder:
         if signal.byte_order == "1":
             return self._extract_intel_raw(frame,signal,)
 
-        raise NotImplementedError(
-        "Motorola byte order is not yet supported."
-    )
+        if signal.byte_order == "0":
+            return self._extract_motorola_raw(frame,signal,)
+
+        raise ValueError(
+            f"Unsupported byte order: {signal.byte_order}"
+        )
+    
     def _extract_intel_raw(self,frame: CANFrame,signal: DBCSignal,) -> int:
         """
         Extract Intel (Little Endian) signal.
@@ -46,8 +50,55 @@ class CANDecoder:
             raw_data >> signal.start_bit
         ) & mask
 
-        return raw_value    
+        return raw_value
+    def _extract_motorola_raw(self,frame: CANFrame,signal: DBCSignal,) -> int:
+        """
+        Extract Motorola (Big Endian) signal.
+        """
 
+        data = bytes(frame.data)
+
+        value = 0
+
+        for i in range(signal.length):
+
+            dbc_bit = signal.start_bit - i
+
+            byte = dbc_bit // 8
+
+            bit = dbc_bit % 8
+
+            value <<= 1
+
+            value |= (data[byte] >> bit) & 1
+
+        return value
+    def _get_bit(self,data: bytes,bit_index: int,) -> int:
+        """
+        Read a single bit from CAN data.
+        """
+
+        byte_index = bit_index // 8
+
+        bit_position = 7 - (bit_index % 8)
+
+        return (
+            data[byte_index] >> bit_position
+        ) & 1    
+    def _apply_signed_conversion(self,raw_value: int,signal: DBCSignal,) -> int:
+        """
+        Convert unsigned raw value to signed value if required.
+        """
+
+        if signal.value_type == "+":
+            return raw_value
+
+        sign_bit = 1 << (signal.length - 1)
+
+        if raw_value & sign_bit:
+            raw_value -= (1 << signal.length)
+
+        return raw_value
     def _apply_scaling(self,raw_value: int,signal: DBCSignal,) -> float:
         """
         Apply DBC scaling (factor and offset).
@@ -59,19 +110,25 @@ class CANDecoder:
 
     def _calculate_physical_value(self,raw_value: int,signal: DBCSignal,) -> float:
         """
-        Convert raw CAN value into physical engineering value.
+        Convert raw CAN value into engineering value.
         """
+        raw_value = self._apply_signed_conversion(
+            raw_value,
+            signal,
+        )
 
         return self._apply_scaling(
             raw_value,
             signal,
         )
+    def _lookup_value_text(self,value: int,signal: DBCSignal,) -> str | None:
+        """
+        Lookup textual representation from VAL_ table.
+        """
 
-    def _decode_signal(
-        self,
-        frame: CANFrame,
-        signal: DBCSignal,
-    ) -> DecodedSignal:
+        return signal.value_table.get(value)
+
+    def _decode_signal(self,frame: CANFrame,signal: DBCSignal,) -> DecodedSignal:
         """
         Decode a single CAN signal.
         """
@@ -82,17 +139,15 @@ class CANDecoder:
         )
 
         engineering_value = self._calculate_physical_value(raw_value,signal,)
-
+        text = self._lookup_value_text(raw_value,signal,)
         return DecodedSignal(
             name=signal.name,
             value=engineering_value,
+            text=text,
             unit=signal.unit,
         )
 
-    def decode_frame(
-        self,
-        frame: CANFrame,
-    ) -> DecodedMessage | None:
+    def decode_frame(self,frame: CANFrame,) -> DecodedMessage | None:
         """
         Decode a single CAN frame.
         """

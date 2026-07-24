@@ -45,6 +45,8 @@ class DBCParser:
                 signal = self._parse_signal(line)
 
                 current_message.signals.append(signal)
+            if line.startswith("VAL_"):
+                self._parse_value_table(line,database,)
 
         return database
     
@@ -115,3 +117,44 @@ class DBCParser:
             maximum=maximum,
             unit=unit,
         )
+    def _parse_value_table(self,line: str,database: DBCDatabase,) -> None:
+        """
+        Parse VAL_ definitions.
+        """
+
+        tokens = line.split()
+
+        can_id = int(tokens[1])
+
+        signal_name = tokens[2]
+
+        message = database.messages.get(can_id)
+
+        if message is None:
+            return
+
+        signal = None
+
+        for s in message.signals:
+
+            if s.name == signal_name:
+                signal = s
+                break
+
+        if signal is None:
+            return
+
+        i = 3
+
+        while i < len(tokens) - 1:
+
+            if tokens[i] == ";":
+                break
+
+            value = int(tokens[i])
+
+            text = tokens[i + 1].replace('"', "").replace(";", "")
+
+            signal.value_table[value] = text
+
+            i += 2

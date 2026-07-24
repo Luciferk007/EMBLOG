@@ -13,3 +13,13 @@ for message in database.messages.values():
 
     for signal in message.signals:
         print(signal.name)
+
+print("\nValue Tables")
+
+database = DBCParser().parse_file(
+    "app/modules/can/sample_data/vehicle.dbc"
+)
+
+signal = database.messages[2015].signals[0]
+
+print(signal.value_table)

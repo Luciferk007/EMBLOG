@@ -21,7 +21,7 @@ class DBCSignal:
     minimum: float
     maximum: float
     unit: str
-
+    value_table: dict[int,str] = field(default_factory=dict)
 
 @dataclass(slots=True)
 class DBCMessage:
@@ -54,6 +54,8 @@ class DecodedSignal:
     name: str
     value: float
     unit: str
+    text: str | None = None
+    unit: str = ""
 
 @dataclass(slots=True)
 class DecodedMessage:
@@ -64,3 +66,5 @@ class DecodedMessage:
     can_id: int
     message_name: str
     signals: list[DecodedSignal] = field(default_factory=list)
+
+    

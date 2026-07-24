@@ -47,6 +47,7 @@ class CANParser:
 
             interface, frame = rest.split(" ", 1)
             can_id, data_hex = frame.split("#")
+            is_extended = len(can_id) > 3
 
             data = [
                 int(data_hex[i:i + 2], 16)
@@ -61,6 +62,7 @@ class CANParser:
                 can_id=can_id,
                 dlc=dlc,
                 data=data,
+                is_extended=is_extended,
             )
 
         except Exception as exc:

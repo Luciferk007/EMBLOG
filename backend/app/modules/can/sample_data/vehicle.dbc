@@ -14,3 +14,5 @@ BO_ 1110 VehicleData: 8 ECU2
 
 BO_ 2015 Diagnostics: 8 ECU3
  SG_ Mode : 0|8@1+ (1,0) [0|255] ""
+
+VAL_ 2015 Mode 0 "Reserved" 1 "CurrentData" 2 "FreezeFrame" 3 "StoredDTC";
